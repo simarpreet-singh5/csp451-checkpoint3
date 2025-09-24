@@ -6,12 +6,12 @@ on:
   pull_request:
     branches: [main]
   schedule:
-    - cron: "0 13 * * *"   # Daily at 13:00 UTC
+    - cron: '0 13 * * *' # Daily at 13:00 UTC
   workflow_dispatch:
 
 permissions:
   contents: read
-  issues: write  # needed for the audit job to open/update an Issue
+  issues: write # needed for the audit job to open/update an Issue
 
 jobs:
   lint:
