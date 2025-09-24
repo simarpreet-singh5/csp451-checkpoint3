@@ -1,0 +1,11 @@
+name: "Setup Node Environment"
+description: "Reusable step to setup Node.js and install deps"
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+    - run: npm ci
+      shell: bash
