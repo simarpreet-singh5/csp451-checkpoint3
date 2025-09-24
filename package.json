@@ -6,8 +6,9 @@
   "scripts": {
     "lint": "npx eslint .",
     "prettier:check": "npx prettier --check .",
-    "test": "jest --ci --coverage",
-    "build": "echo \"Build step placeholder\""
+    "prettier:write": "npx prettier --write .",
+    "test": "jest --config=jest.config.js --coverage --runInBand",
+    "build": "echo \"Build step (customize as needed)\""
   },
   "keywords": [],
   "author": "",
