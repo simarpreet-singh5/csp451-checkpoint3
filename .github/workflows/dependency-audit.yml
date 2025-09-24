@@ -1,0 +1,46 @@
+name: Daily Dependency & Security Audit
+on:
+  schedule:
+    - cron: "0 13 * * *"   # daily 13:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20', cache: 'npm' }
+      - run: npm ci
+      - id: audit
+        continue-on-error: true
+        run: |
+          npm audit --audit-level=high > audit.txt 2>&1 || true
+          echo "exitcode=$?" >> $GITHUB_OUTPUT
+      - uses: actions/upload-artifact@v4
+        with: { name: npm-audit-report, path: audit.txt }
+      - if: steps.audit.outputs.exitcode != '0'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('audit.txt','utf8');
+            const title = 'Security vulnerabilities detected by npm audit';
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner, repo: context.repo.repo, state: 'open', labels: 'security,audit'
+            });
+            const existing = issues.find(i => i.title === title);
+            const payload = {
+              owner: context.repo.owner, repo: context.repo.repo,
+              title, body: "Daily audit found vulnerabilities:\n\n```\n"+body.substring(0,60000)+"\n```",
+              labels: ['security','audit']
+            };
+            if (existing) {
+              await github.rest.issues.update({ ...payload, issue_number: existing.number, body: payload.body + `\n\n_Updated: ${new Date().toISOString()}_`});
+            } else {
+              await github.rest.issues.create(payload);
+            }
