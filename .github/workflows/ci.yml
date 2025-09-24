@@ -1,4 +1,5 @@
 name: CI Pipeline
+
 on:
   push:
     branches: [main, develop]
@@ -7,6 +8,7 @@ on:
 
 jobs:
   lint:
+    name: Lint & Prettier
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,10 +17,13 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
-      - run: npm run lint
-      - run: npm run prettier:check
+      - name: ESLint
+        run: npm run lint
+      - name: Prettier check
+        run: npm run prettier:check
 
   test:
+    name: Testing + Coverage
     needs: lint
     runs-on: ubuntu-latest
     steps:
@@ -28,9 +33,24 @@ jobs:
           node-version: '20'
           cache: 'npm'
       - run: npm ci
-      - run: npm test -- --coverage
+      # ---- debug so we can see what's available on the runner
+      - name: Show jest version
+        run: npx --yes jest --version
+      - name: List repo files
+        run: ls -la && echo && ls -la __tests__ || true
+      # ---- run tests (fail if coverage < 80% via package.json thresholds)
+      - name: Run tests with coverage
+        run: npx --yes jest --ci --coverage --runInBand
+      # ---- upload coverage as artifact for inspection
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage
 
   build:
+    name: Build
     needs: test
     runs-on: ubuntu-latest
     steps:
