@@ -1,106 +1,62 @@
-\# Workflow Documentation
+\# 🛠️ Workflow Documentation – CSP451 Checkpoint 3
 
 
 
-\## CI Pipeline (`.github/workflows/ci.yml`)
-
-\*\*Purpose:\*\* Quality gate for every change. Ensures code style, tests (with coverage ≥80%), build, and daily security checks.
+\## 📌 CI Pipeline (`.github/workflows/ci.yml`)
 
 
 
-\*\*Triggers\*\*
+\*\*Purpose:\*\*  
 
-\- `push`: branches `main`, `develop`
+This workflow automatically runs on every push or pull request to `main` or `develop`.  
 
-\- `pull\_request`: into `main`
-
-\- `schedule`: daily (`cron`) for dependency/security audit
-
-\- `workflow\_dispatch`: manual run
+It ensures the code is clean, tested, and build-ready before merging.
 
 
 
-\*\*Jobs \& Dependencies\*\*
+\*\*Triggers:\*\*  
 
-\- `lint` → `test` → `build` (sequential)
+\- `on: push` (branches: main, develop)  
 
-\- `audit` runs independently (on schedule and on push)
-
-
-
-\*\*Job Details\*\*
-
-\- \*\*Lint \& Prettier:\*\* runs ESLint and Prettier checks.
-
-\- \*\*Testing + Coverage:\*\* runs Jest in CI mode, uploads a `coverage/` artifact. Coverage threshold enforced via `package.json`.
-
-\- \*\*Build:\*\* builds the project (outputs to `dist/`).
-
-\- \*\*Daily Dependency \& Security Audit:\*\* runs `npm audit --audit-level=high`, uploads `audit.txt`, and creates/updates a GitHub Issue if vulnerabilities are found.
+\- `on: pull\_request` (branch: main)
 
 
 
-\*\*Secrets / Permissions\*\*
-
-\- No secrets required by default.
-
-\- Workflow sets permissions: `contents: read`, `issues: write` (for audit Issue creation).
-
-\- Optional (not required here): `VITE\_API\_BASE\_URL` for builds, `CODECOV\_TOKEN` if using Codecov.
+\*\*Jobs \& Order:\*\*
 
 
 
-\*\*Troubleshooting\*\*
+1\. \*\*Lint \& Prettier\*\* – Checks code style with ESLint and Prettier.
 
-\- Lint errors → `npx eslint . --fix` and `npx prettier --write .`
+2\. \*\*Testing + Coverage\*\* – Runs Jest unit tests and generates a coverage report.
 
-\- Coverage fail → add tests or review thresholds in `package.json`.
+3\. \*\*Build\*\* – Builds the application after successful linting and tests.
 
-\- Audit findings → download `audit.txt` artifact or read the created Issue.
-
-\- Windows/CRLF issues → we set Prettier `"endOfLine": "auto"`.
+4\. \*\*Audit\*\* – (Optional) Checks for vulnerabilities with `npm audit`.
 
 
 
----
+\*\*Artifacts Produced:\*\*  
+
+\- Test coverage report (`coverage/`)  
+
+\- Audit report (if vulnerabilities are found)
 
 
 
-\## GitHub Pages Deploy (`.github/workflows/pages.yml`)
+\*\*Secrets / Permissions:\*\*  
 
-\*\*Purpose:\*\* Publishes `dist/` to GitHub Pages.
-
-
-
-\*\*Triggers:\*\* `push` to `main`, manual `workflow\_dispatch`.
+\- None required for CI.
 
 
 
-\*\*Flow:\*\*
+\*\*Common Issues \& Fixes:\*\*  
 
-1\. `build` job
+\- `exit code 1` during lint: Run `npm run lint` and fix errors.  
 
-&nbsp;  - Checkout, Node 20, `npm ci`
+\- `exit code 127` in tests: Ensure Jest is installed and tests are valid.  
 
-&nbsp;  - Build (or placeholder page)
-
-&nbsp;  - `actions/configure-pages@v5`
-
-&nbsp;  - Upload artifact with `actions/upload-pages-artifact@v3`
-
-2\. `deploy` job
-
-&nbsp;  - `actions/deploy-pages@v4` to publish
-
-&nbsp;  - Environment `github-pages` exposes the Page URL
-
-
-
-\*\*One-time Setup:\*\* Repo \*\*Settings → Pages → Build and deployment → GitHub Actions\*\*.
-
-
-
-\*\*Troubleshooting:\*\* Ensure `configure-pages` step exists, correct permissions (`pages: write`, `id-token: write`), and artifact path is `dist/`.
+\- Coverage < 80%: Add or improve unit tests.
 
 
 
@@ -108,27 +64,45 @@
 
 
 
-\## Reusable Composite Action (`.github/actions/setup-node-env/action.yml`)
-
-\*\*Purpose:\*\* DRY setup for Node + dependency install.
+\## 📤 Deployment Workflow (`.github/workflows/pages.yml`)
 
 
 
-\*\*What it does:\*\* Configures Node 20 with npm cache and runs `npm ci`.
+\*\*Purpose:\*\*  
+
+Automatically builds and deploys the project to GitHub Pages.
 
 
 
-\*\*Usage Example:\*\*
+\*\*Triggers:\*\*  
+
+\- `on: push` (branch: `main`)  
+
+\- `on: workflow\_dispatch` (manual run)
+
+
+
+\*\*Jobs:\*\*
+
+
+
+1\. \*\*Build\*\* – Installs dependencies, runs the build command, and prepares the `dist/` folder.
+
+2\. \*\*Deploy\*\* – Publishes the content of `dist/` to GitHub Pages.
+
+
+
+\*\*Permissions Needed:\*\*  
 
 ```yaml
 
-steps:
+permissions:
 
-&nbsp; - uses: actions/checkout@v4
+&nbsp; contents: read
 
-&nbsp; - uses: ./.github/actions/setup-node-env
+&nbsp; pages: write
 
-&nbsp; - run: npm run lint
+&nbsp; id-token: write
 
 
 
